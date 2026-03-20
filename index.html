@@ -29,7 +29,7 @@
         const myTopic = "sensor/18168092625";
         
         // 如果 8084 依然连不上，可以尝试把 8084 改成 443
-        const client = mqtt.connect('wss://broker.emqx.io:443/mqtt');
+        const client = mqtt.connect('wss://broker.emqx.io:8084/mqtt');
 
         client.on('connect', () => {
             const stat = document.getElementById('stat');
