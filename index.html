@@ -3,61 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RISC-V 传感器监控</title>
-    <script src="https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/mqtt/4.2.8/mqtt.min.js"></script>
+    <title>RISC-V 监控</title>
+    <script src="https://cdn.staticfile.net/mqtt/4.2.8/mqtt.min.js"></script>
     <style>
-        body { 
-            font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; 
-            background: #f0f2f5; 
-            display: flex; 
-            justify-content: center; 
-            padding: 20px; 
-            margin: 0;
-        }
-        .card { 
-            background: white; 
-            padding: 20px; 
-            border-radius: 16px; 
-            box-shadow: 0 8px 16px rgba(0,0,0,0.08); 
-            width: 100%;
-            max-width: 350px; 
-        }
-        h2 { 
-            border-bottom: 2px solid #007bff; 
-            padding-bottom: 12px; 
-            color: #333; 
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 1.2rem;
-        }
-        .data-item { 
-            margin: 18px 0; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center;
-        }
-        .value-box {
-            font-weight: bold;
-            color: #007bff;
-            font-size: 1.3em;
-        }
-        .unit { 
-            color: #888; 
-            font-size: 0.7em; 
-            margin-left: 4px;
-        }
-        .status { 
-            font-size: 0.7em; 
-            color: #ff4757;
-            font-weight: bold;
-        }
+        body { font-family: -apple-system, "PingFang SC", sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; margin: 0; }
+        .card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 8px 16px rgba(0,0,0,0.08); width: 100%; max-width: 350px; }
+        h2 { border-bottom: 2px solid #007bff; padding-bottom: 12px; color: #333; display: flex; justify-content: space-between; align-items: center; font-size: 1.2rem; }
+        .data-item { margin: 18px 0; display: flex; justify-content: space-between; align-items: center; }
+        .value-box { font-weight: bold; color: #007bff; font-size: 1.3em; }
+        .unit { color: #888; font-size: 0.7em; margin-left: 4px; }
+        .status { font-size: 0.7em; color: #ff4757; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="card">
         <h2>设备状态 <span id="stat" class="status">● 离线</span></h2>
-        
         <div class="data-item">温度: <div><span id="temp" class="value-box">--</span><span class="unit">℃</span></div></div>
         <div class="data-item">湿度: <div><span id="humi" class="value-box">--</span><span class="unit">%RH</span></div></div>
         <div class="data-item">压力: <div><span id="pres" class="value-box">--</span><span class="unit">Pa</span></div></div>
@@ -68,43 +28,34 @@
     <script>
         const myTopic = "sensor/18168092625";
         
-        // 尝试连接。注意：如果 8084 被墙，网页端很难有其他办法，
-        // 但库文件加载快了，连接成功率会提高很多。
+        // 如果 8084 依然连不上，可以尝试把 8084 改成 443
         const client = mqtt.connect('wss://broker.emqx.io:8084/mqtt');
 
-        const statEl = document.getElementById('stat');
-
         client.on('connect', () => {
-            statEl.innerText = "● 在线";
-            statEl.style.color = "#2ecc71";
+            const stat = document.getElementById('stat');
+            stat.innerText = "● 在线";
+            stat.style.color = "#2ecc71";
             client.subscribe(myTopic);
         });
 
         client.on('message', (topic, message) => {
             try {
                 const data = JSON.parse(message.toString());
-                
-                // 强制转换下位机发来的字符串
-                const t = parseFloat(data.temp);
-                const h = parseFloat(data.humidity);
-                const p = parseFloat(data.pressure);
-                const l = parseFloat(data.lux);
-                const a = parseFloat(data.altitude);
-
-                if (!isNaN(t)) document.getElementById('temp').innerText = t.toFixed(1);
-                if (!isNaN(h)) document.getElementById('humi').innerText = h.toFixed(1);
-                if (!isNaN(p)) document.getElementById('pres').innerText = p.toFixed(1);
-                if (!isNaN(l)) document.getElementById('lux').innerText = l.toFixed(1);
-                if (!isNaN(a)) document.getElementById('alti').innerText = a.toFixed(1);
-                
-            } catch (e) { 
-                console.error("解析失败:", e); 
-            }
+                // 适配你的字符串格式数据
+                const update = (id, val) => {
+                    const n = parseFloat(val);
+                    if(!isNaN(n)) document.getElementById(id).innerText = n.toFixed(1);
+                };
+                update('temp', data.temp);
+                update('humi', data.humidity);
+                update('pres', data.pressure);
+                update('lux', data.lux);
+                update('alti', data.altitude);
+            } catch (e) { console.error("解析错误"); }
         });
 
         client.on('error', () => {
-            statEl.innerText = "● 连接错误";
-            statEl.style.color = "#ff4757";
+            document.getElementById('stat').innerText = "● 连接超时";
         });
     </script>
 </body>
