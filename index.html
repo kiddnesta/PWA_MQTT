@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>RISC-V 传感器监控</title>
+    <script src="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/mqtt/4.2.8/mqtt.min.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            background: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 300px;
+        }
+
+        h2 {
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+            color: #333;
+        }
+
+        .data-item {
+            margin: 15px 0;
+            font-size: 1.2em;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .unit {
+            color: #888;
+            font-size: 0.8em;
+        }
+
+        .status {
+            font-size: 0.8em;
+            color: green;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <h2>设备状态 <span id="stat" class="status">● 离线</span></h2>
+        <div class="data-item">温度: <span id="temp">--</span> <span class="unit">℃</span></div>
+        <div class="data-item">湿度: <span id="humi">--</span> <span class="unit">%RH</span></div>
+        <div class="data-item">压力: <span id="pres">--</span> <span class="unit">Pa</span></div>
+        <div class="data-item">光照: <span id="lux">--</span> <span class="unit">lux</span></div>
+    </div>
+
+    <script>
+        // 1. 设置你的唯一主题 (必须和下位机一致)
+        const myTopic = "sensor/18168092625";
+
+        // 2. 连接公共服务器 (使用 WebSocket 协议)
+        const client = mqtt.connect('wss://broker.emqx.io:8084/mqtt');
+
+        client.on('connect', () => {
+            document.getElementById('stat').innerText = "● 在线";
+            client.subscribe(myTopic);
+        });
+
+        client.on('message', (topic, message) => {
+            try {
+                const data = JSON.parse(message.toString());
+                // 更新页面显示，控制保留1位小数
+                document.getElementById('temp').innerText = data.temp.toFixed(1);
+                document.getElementById('humi').innerText = data.humidity.toFixed(1);
+                document.getElementById('pres').innerText = data.pressure.toFixed(1);
+                document.getElementById('lux').innerText = data.lux.toFixed(1);
+            } catch (e) { console.error("解析失败", e); }
+        });
+    </script>
+</body>
+
+</html>
